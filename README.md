@@ -11,11 +11,12 @@ Sistem manajemen mobil berbasis web yang dibangun dengan Django. Aplikasi ini me
 
 - **CRUD Operations**: Tambah, lihat, edit, dan hapus data mobil
 - **Sistem Autentikasi**: Login/logout dengan validasi keamanan
+- **Permission System**: Sistem izin berbasis role untuk kontrol akses granular
 - **Admin-Only Registration**: Hanya admin yang dapat membuat akun baru
 - **User Management**: Manajemen pengguna melalui Django Admin
 - **Responsive UI**: Antarmuka yang responsif dengan Bootstrap 5
 - **Search & Filter**: Pencarian dan filter data mobil
-- **Secure Access**: Proteksi halaman dengan decorator autentikasi
+- **Secure Access**: Proteksi halaman dengan decorator autentikasi dan permission
 
 ## 🛠️ Tech Stack
 
@@ -147,6 +148,189 @@ Model `Car` memiliki field:
 - Halaman CRUD dilindungi dengan `@login_required`
 - Registrasi hanya untuk admin (`@user_passes_test`)
 - User yang sudah login tidak dapat akses halaman login
+- **Permission System**: Kontrol akses berbasis izin untuk setiap operasi
+
+## 🔐 Permission System
+
+Sistem ini menggunakan Django's built-in permission system dengan custom permissions untuk kontrol akses yang lebih granular.
+
+### Custom Permissions
+Model `Car` memiliki custom permissions:
+- `can_view_all_cars`: Dapat melihat semua mobil
+- `can_add_car`: Dapat menambah mobil baru
+- `can_change_car`: Dapat mengubah data mobil
+- `can_delete_car`: Dapat menghapus mobil
+
+### Setup Permission System
+
+#### 1. Buat dan Apply Migration
+```bash
+# Buat migration untuk custom permissions
+python manage.py makemigrations cars
+
+# Apply migration ke database
+python manage.py migrate
+```
+
+#### 2. Buat Superuser (jika belum ada)
+```bash
+python manage.py createsuperuser
+```
+
+#### 3. Akses Django Admin
+1. Jalankan server: `python manage.py runserver`
+2. Buka browser: `http://127.0.0.1:8000/admin/`
+3. Login dengan akun superuser
+
+### Permission Management
+
+#### Assign Permissions ke User
+1. Di Django Admin, pilih **Users**
+2. Pilih user yang ingin diatur
+3. Scroll ke bagian **User permissions**
+4. Pilih permissions yang diinginkan:
+   - `cars | car | Can view all cars`
+   - `cars | car | Can add car`
+   - `cars | car | Can change car`
+   - `cars | car | Can delete car`
+5. Klik **Save**
+
+#### Membuat dan Manage Groups
+1. Di Django Admin, pilih **Groups**
+2. Klik **Add group**
+3. Beri nama group (contoh: "Car Managers", "Viewers Only")
+4. Pilih permissions untuk group
+5. Assign users ke group di halaman user
+
+#### Contoh Role-Based Setup
+
+**Role: Car Manager (Full Access)**
+```bash
+# Permissions yang diperlukan:
+- can_view_all_cars
+- can_add_car
+- can_change_car
+- can_delete_car
+```
+
+**Role: Car Viewer (Read Only)**
+```bash
+# Permissions yang diperlukan:
+- can_view_all_cars
+```
+
+**Role: Car Editor (No Delete)**
+```bash
+# Permissions yang diperlukan:
+- can_view_all_cars
+- can_add_car
+- can_change_car
+```
+
+### Testing Permission System
+
+#### Skenario Testing
+1. **Test User tanpa Permission**:
+   - Login dengan user baru
+   - Coba akses `/cars/` → Akan redirect ke login
+   - UI tidak menampilkan tombol/link yang tidak diizinkan
+
+2. **Test User dengan Permission Terbatas**:
+   - Buat user dengan hanya `can_view_all_cars`
+   - Login dan cek bahwa tombol "Tambah", "Edit", "Hapus" tidak muncul
+   - Coba akses langsung URL `/cars/add/` → Akan redirect ke login
+
+3. **Test User dengan Full Permission**:
+   - Assign semua permissions ke user
+   - Pastikan semua fitur dapat diakses
+
+#### Command untuk Testing
+```bash
+# Buat test user via Django shell
+python manage.py shell
+
+# Di shell Python:
+from django.contrib.auth.models import User, Permission
+from django.contrib.contenttypes.models import ContentType
+from cars.models import Car
+
+# Buat user test
+user = User.objects.create_user('testuser', 'test@example.com', 'password123')
+
+# Ambil permission
+content_type = ContentType.objects.get_for_model(Car)
+view_permission = Permission.objects.get(codename='view_car', content_type=content_type)
+
+# Assign permission
+user.user_permissions.add(view_permission)
+```
+
+### UI Permission Checks
+
+Template menggunakan `perms` context processor untuk menyembunyikan elemen UI:
+
+```html
+<!-- Contoh di template -->
+{% if perms.cars.add_car %}
+    <a href="{% url 'car_create' %}" class="btn btn-success">
+        Tambah Mobil
+    </a>
+{% endif %}
+
+{% if perms.cars.change_car %}
+    <a href="{% url 'car_update' car.pk %}" class="btn btn-warning">
+        Edit
+    </a>
+{% endif %}
+```
+
+### Troubleshooting Permission
+
+#### Masalah Umum
+1. **User tidak bisa akses meskipun punya permission**:
+   - Pastikan migration sudah dijalankan
+   - Cek apakah permission benar-benar ter-assign
+   - Logout dan login ulang
+
+2. **Permission tidak muncul di Admin**:
+   ```bash
+   # Jalankan ulang migration
+   python manage.py migrate --run-syncdb
+   ```
+
+3. **Template tidak menyembunyikan elemen**:
+   - Pastikan menggunakan `{% if perms.cars.permission_name %}`
+   - Cek apakah context processor aktif di settings
+
+#### Debug Permission
+```bash
+# Cek permission user via shell
+python manage.py shell
+
+# Di shell:
+from django.contrib.auth.models import User
+user = User.objects.get(username='username')
+print(user.get_all_permissions())
+print(user.has_perm('cars.add_car'))
+```
+
+#### Reset Permissions
+```bash
+# Hapus semua permissions dan buat ulang
+python manage.py shell
+
+# Di shell:
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+from cars.models import Car
+
+# Hapus custom permissions
+content_type = ContentType.objects.get_for_model(Car)
+Permission.objects.filter(content_type=content_type).delete()
+
+# Keluar shell dan jalankan migration ulang
+# python manage.py migrate
+```
 
 ## 🌐 URL Testing
 

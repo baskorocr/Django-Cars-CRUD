@@ -19,8 +19,12 @@
                 <span class="navbar-text me-3">
                     Halo, {{ user.username }}!
                 </span>
+                {% if perms.cars.view_car %}
                 <a class="nav-link" href="{% url 'car_list' %}">Daftar Mobil</a>
+                {% endif %}
+                {% if perms.cars.add_car %}
                 <a class="nav-link" href="{% url 'car_create' %}">Tambah Mobil</a>
+                {% endif %}
                 <a class="nav-link" href="{% url 'logout' %}">Logout</a>
             </div>
             {% else %}

@@ -1,16 +1,18 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_protect
 from .models import Car
 
 # Create your views here.
 @login_required
+@permission_required('cars.can_view_all_cars')
 def car_list(request):
     cars = Car.objects.filter(owner=request.user)
     return render(request, 'cars/car_list.html', {'cars': cars})
 
 @login_required
+@permission_required('cars.can_add_car')
 @csrf_protect
 def car_create(request):
     if request.method == 'POST':
@@ -34,11 +36,13 @@ def car_create(request):
     return render(request, 'cars/car_form.html')
 
 @login_required
+@permission_required('cars.can_view_all_cars')
 def car_detail(request, pk):
     car = get_object_or_404(Car, pk=pk, owner=request.user)
     return render(request, 'cars/car_detail.html', {'car': car})
 
 @login_required
+@permission_required('cars.can_change_car')
 @csrf_protect
 def car_update(request, pk):
     car = get_object_or_404(Car, pk=pk, owner=request.user)
@@ -57,6 +61,7 @@ def car_update(request, pk):
     return render(request, 'cars/car_form.html', {'car': car})
 
 @login_required
+@permission_required('cars.can_delete_car')
 @csrf_protect
 def car_delete(request, pk):
     car = get_object_or_404(Car, pk=pk, owner=request.user)

@@ -16,6 +16,12 @@ class Car(models.Model):
         verbose_name = 'Mobil'
         verbose_name_plural = 'Mobil'
         ordering = ['-created_at']
+        permissions = [
+            ('can_view_all_cars', 'Can view all cars'),
+            ('can_add_car', 'Can add car'),
+            ('can_change_car', 'Can change car'),
+            ('can_delete_car', 'Can delete car'),
+        ]
     
     def __str__(self):
         return f"{self.brand} {self.model} ({self.year})"
