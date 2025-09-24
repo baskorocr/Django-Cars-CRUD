@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Hapus {{ car.brand }} {{ car.model }} - Car Management{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> Konfirmasi Hapus
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-warning"></i>
+                    <strong>Peringatan!</strong> Tindakan ini tidak dapat dibatalkan.
+                </div>
+                
+                <p>Apakah Anda yakin ingin menghapus mobil berikut?</p>
+                
+                <div class="bg-light p-3 rounded mb-3">
+                    <h5 class="mb-2">{{ car.brand }} {{ car.model }}</h5>
+                    <p class="mb-1"><strong>Tahun:</strong> {{ car.year }}</p>
+                    <p class="mb-1"><strong>Warna:</strong> {{ car.color }}</p>
+                    <p class="mb-0"><strong>Harga:</strong> Rp {{ car.price|floatformat:0 }}</p>
+                </div>
+                
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger me-2">
+                        <i class="fas fa-trash"></i> Ya, Hapus Mobil
+                    </button>
+                </form>
+                
+                <a href="{% url 'car_detail' car.pk %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Batal
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
